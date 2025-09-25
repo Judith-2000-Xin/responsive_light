@@ -35,7 +35,7 @@
   /* 確保所有頁面內容居中但文字靠左 */
   .intro-page{
     text-align:left;
-    max-width:calc(100vw - 30px);
+    max-width:100%;
     width:100%;
     box-sizing:border-box;
   }
@@ -61,7 +61,7 @@
   }
 
   .profile-page{
-    max-width:calc(100vw - 30px);
+    max-width:100%;
     width:100%;
     box-sizing:border-box;
   }
@@ -120,11 +120,11 @@
   .other-input:focus{outline:none;border-color:#42a5f5}
 
   .light-page{
-    padding:15px;
+    padding:10px;
     justify-content:flex-start;
     align-items:center;
-    gap:20px;
-    max-width:calc(100vw - 30px);
+    gap:15px;
+    max-width:100%;
     width:100%;
     box-sizing:border-box;
   }
@@ -134,7 +134,7 @@
     align-items:center;
     gap:15px;
     width:100%;
-    max-width:calc(100vw - 30px);
+    max-width:100%;
     box-sizing:border-box;
   }
   .light-title{
@@ -144,13 +144,14 @@
     text-align:center;
   }
   .light-canvas{
-    width:calc(100vw - 60px);
-    height:calc(100vw - 60px);
-    max-width:400px;
-    max-height:400px;
+    width:95%;
+    height:95vw;
+    max-width:450px;
+    max-height:450px;
     border:1px solid rgba(100,120,180,.2);
     border-radius:10px;
     box-sizing:border-box;
+    aspect-ratio:1/1;
   }
   .light-description{
     text-align:center;
@@ -162,8 +163,8 @@
 
   /* LED 色溫條：響應式設計 */
   .led-wrap{
-    width:calc(100vw - 60px);
-    max-width:400px;
+    width:95%;
+    max-width:450px;
     box-sizing:border-box;
   }
   .led-strip{
@@ -207,12 +208,13 @@
 
   .rating-panel{
     width:100%;
-    max-width:calc(100vw - 30px);
-    padding:20px 15px;
+    max-width:100%;
+    padding:15px 10px;
     background:linear-gradient(135deg,rgba(30,40,60,.9),rgba(20,30,45,.95));
     border-radius:16px;
     border:2px solid rgba(100,120,180,.3);
     box-sizing:border-box;
+    margin:0;
   }
   .rating-title{
     font-size:clamp(18px, 3vw, 24px);
@@ -290,7 +292,7 @@
 
   .thank-page{
     text-align:center;
-    max-width:calc(100vw - 30px);
+    max-width:100%;
     width:100%;
     box-sizing:border-box;
   }
@@ -324,7 +326,7 @@
   /* 針對極小螢幕的額外優化 */
   @media (max-width: 480px) {
     .page {
-      padding: 15px 10px;
+      padding: 10px 5px;
     }
     
     .checkbox-group {
@@ -340,7 +342,7 @@
     
     .light-page {
       gap: 15px;
-      padding: 10px;
+      padding: 5px;
     }
     
     .scale-container {
@@ -357,15 +359,19 @@
     }
     
     .light-canvas {
-      width: calc(100vw - 40px);
-      height: calc(100vw - 40px);
-      max-width: 300px;
-      max-height: 300px;
+      width: 98%;
+      height: 98vw;
+      max-width: 380px;
+      max-height: 380px;
     }
     
     .led-wrap {
-      width: calc(100vw - 40px);
-      max-width: 300px;
+      width: 98%;
+      max-width: 380px;
+    }
+    
+    .light-display {
+      width: 100%;
     }
   }
 
@@ -634,8 +640,9 @@
     // 響應式調整 canvas 尺寸
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      const size = Math.min(rect.width, rect.height, window.innerWidth * 0.95);
+      canvas.width = size;
+      canvas.height = size;
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
