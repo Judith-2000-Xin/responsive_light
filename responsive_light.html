@@ -7,7 +7,7 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   html{overflow-x:hidden;width:100%}
-  body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:linear-gradient(135deg,#0f1419 0%,#1a2332 100%);color:#fff;min-height:100vh;overflow-x:hidden;width:100%;position:relative;padding-top:20px; padding-bottom:20px;}  /* Added padding here */
+  body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:linear-gradient(135deg,#0f1419 0%,#1a2332 100%);color:#fff;min-height:100vh;overflow-x:hidden;width:100%;position:relative}
 
   .page{
     position:absolute;
@@ -28,8 +28,6 @@
     overflow-x:hidden;
     padding:10px;
     box-sizing:border-box;
-    padding-top:20px;  /* Added padding here */
-    padding-bottom:20px;  /* Added padding here */
   }
   .page.active{opacity:1;transform:translateX(0);z-index:10}
   .page.prev{transform:translateX(-100px)}
@@ -506,6 +504,240 @@
   let totalPages  = 15;
   let selectedOptions = { gender:'', age:'', nationality:'' };
   let ratings = {};
+
+  /* 光互動清單 */
+  const lightTypes = [
+    { name:'Breathing 呼吸律動', type:'breathing', description:'如呼吸般緩慢變化的光效，模擬生命的節奏感' },
+    { name:'Heartbeat 心跳節拍', type:'heartbeat', description:'模擬心跳節奏的光效，帶有規律的強弱變化' },
+    { name:'Flash 閃爍警示', type:'flash', description:'快速閃爍的光效，用於吸引注意力' },
+    { name:'Fade Out 漸漸消失', type:'fadeout', description:'光線逐漸淡出的效果，營造平靜的氛圍' },
+    { name:'Focus 聚焦集中', type:'spotlight', description:'集中的光束效果，用於突出重點' },
+    { name:'Expand 擴散展開', type:'diffuse', description:'光線向外擴散的效果，營造開放感' },
+    { name:'Fragment 碎片漂移', type:'fragment', description:'光線分散移動的效果，表現動態變化' },
+    { name:'Progress 進度推進', type:'progress', description:'表現進度的光效，具有前進感' },
+    { name:'Cold Sleep 冷靜休眠', type:'cold', description:'冷色調的溫和光效，帶來平靜感受' },
+    { name:'Awakening 溫暖甦醒', type:'warm', description:'暖色調的活躍光效，帶來活力感受' },
+    { name:'Nodding 點頭回應', type:'nodding', description:'上下移動的光效，模擬點頭動作' },
+    { name:'Feedback 互動回饋', type:'feedback', description:'根據滑鼠位置變化的互動光效' }
+  ];
+
+  /* === 依你的圖改成 5 題、7 點量表 === */
+  const ratingScales = [
+    { key:'relax',    label:'放鬆面向',   statement:'「這種光效能讓我感到放鬆。」' },
+    { key:'focus',    label:'專注面向',   statement:'「這種光效幫助我更專心於任務。」' },
+    { key:'alert',    label:'提醒面向',   statement:'「這種光效能有效提醒我注意環境或任務。」' },
+    { key:'distract', label:'干擾面向（反向題）', statement:'「這種光效讓我感到分心。」', reverse:true },
+    { key:'overall',  label:'整體評價（總結性題目）', statement:'「整體而言，這種光效對我是正面的體驗。」' }
+  ];
+  const likertLeft  = '非常不同意';
+  const likertRight = '非常同意';
+
+  /* ================= 導覽 ================= */
+  function nextPage(){
+    if(currentPage===1){
+      if(!selectedOptions.gender||!selectedOptions.age||!selectedOptions.nationality){
+        alert('請完成所有基本資料填寫');return;
+      }
+    }
+    if(currentPage>=2 && currentPage<=1+lightTypes.length){
+      const lightType=lightTypes[currentPage-2].type;
+      if(!ratings[lightType] || Object.keys(ratings[lightType]).length<ratingScales.length){
+        alert('請完成所有項目的評分');return;
+      }
+    }
+    const cur=document.getElementById(`page${currentPage}`);
+    if(cur){cur.classList.remove('active');cur.classList.add('prev');}
+    currentPage++;
+    let nxt=(currentPage>=totalPages-1)?document.getElementById('thankPage'):document.getElementById(`page${currentPage}`);
+    if(currentPage>=totalPages-1) currentPage = totalPages-1;
+    if(nxt){nxt.classList.add('active');nxt.classList.remove('prev');}
+    updateProgress();
+  }
+  function updateProgress(){
+    const p = (currentPage/(totalPages-1))*100;
+    document.getElementById('progressBar').style.width = `${p}%`;
+  }
+  window.nextPage = nextPage;
+
+  /* ================= 表單 ================= */
+  function selectOption(group,value){
+    const groupEl=document.getElementById(group+'Group'); if(!groupEl) return;
+    groupEl.querySelectorAll('.checkbox-item').forEach(el=>{
+      el.classList.remove('selected'); const cb=el.querySelector('input'); if(cb) cb.checked=false;
+    });
+    const item=[...groupEl.querySelectorAll('.checkbox-item')].find(x=>x.dataset.value===value);
+    if(item){ item.classList.add('selected'); const cb=item.querySelector('input'); if(cb) cb.checked=true; }
+    selectedOptions[group]=value;
+    const other=document.getElementById(group+'Other');
+    if(other){ if(value.includes('other')){ other.style.display='block'; other.focus(); } else { other.style.display='none'; other.value=''; } }
+  }
+  window.selectOption = selectOption;
+
+  function setRating(lightType,scale,value){
+    ratings[lightType]=ratings[lightType]||{}; ratings[lightType][scale]=value;
+    const idx = lightTypes.findIndex(l=>l.type===lightType)+2;
+    const page = document.getElementById(`page${idx}`);
+    if(page){
+      page.querySelectorAll(`.scale-btn[data-scale="${scale}"]`).forEach(b=>b.classList.remove('selected'));
+      const t = page.querySelector(`.scale-btn[data-scale="${scale}"][data-value="${value}"]`);
+      if(t) t.classList.add('selected');
+    }
+  }
+  window.setRating = setRating;
+
+  /* ================= 建立光頁 ================= */
+  function createLightPages(){
+    lightTypes.forEach((light,i)=>{
+      const pageIndex = i+2;
+      const page = document.createElement('div');
+      page.className = 'page light-page';
+      page.id = `page${pageIndex}`;
+      page.innerHTML = `
+        <div class="light-display">
+          <div class="light-title">${light.name}</div>
+          <canvas class="light-canvas" id="canvas${pageIndex}" width="560" height="560"></canvas>
+          <div class="light-description">${light.description}</div>
+
+          <div class="led-wrap">
+            <div class="led-strip" style="--sweep-duration:${SWEEP_DURATION_MS}ms">
+              <div class="led-gloss"></div>
+              <div class="lightbar"></div>
+              <div class="led-indicator" id="ledIndicator${pageIndex}"></div>
+            </div>
+            <div class="temperature-labels"><span>1816K</span><span>9802K</span></div>
+          </div>
+        </div>
+
+        <div class="rating-panel">
+          <h3 class="rating-title">請依直覺作答即可</h3>
+          ${ratingScales.map(s=>`
+            <div class="rating-scale">
+              <div class="question"><strong>${s.label}</strong><br>${s.statement}</div>
+              <div class="scale-container">
+                <div class="scale-end">${likertLeft}</div>
+                <div class="scale-buttons">
+                  ${[1,2,3,4,5,6,7].map(n=>`
+                    <div class="scale-btn" title="${n}" data-scale="${s.key}" data-value="${n}"
+                         onclick="setRating('${light.type}','${s.key}',${n})">${n}</div>
+                  `).join('')}
+                </div>
+                <div class="scale-end">${likertRight}</div>
+              </div>
+            </div>
+          `).join('')}
+          <button class="btn btn-primary btn-next" onclick="nextPage()">NEXT</button>
+        </div>`;
+      document.body.appendChild(page);
+      initLight(pageIndex, light);
+    });
+  }
+
+  /* ================= lightbar：1816K→9802K 單向循環 ================= */
+  function initLight(pageIndex, light){
+    const canvas = document.getElementById(`canvas${pageIndex}`);
+    const ctx    = canvas.getContext('2d');
+    const dot    = document.getElementById(`ledIndicator${pageIndex}`);
+
+    // 響應式調整 canvas 尺寸
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height, window.innerWidth * 0.95);
+      canvas.width = size;
+      canvas.height = size;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let raf=null, phase=0, mouseX, mouseY;
+    
+    function updateMousePos() {
+      mouseX = canvas.width * 0.4;
+      mouseY = canvas.height * 0.4;
+    }
+    updateMousePos();
+    
+    canvas.addEventListener('mousemove',e=>{
+      const r=canvas.getBoundingClientRect(); 
+      mouseX=(e.clientX-r.left)*(canvas.width/r.width); 
+      mouseY=(e.clientY-r.top)*(canvas.height/r.height);
+    },{passive:true});
+    canvas.addEventListener('touchmove',e=>{
+      const r=canvas.getBoundingClientRect(); const t=e.touches[0];
+      mouseX=(t.clientX-r.left)*(canvas.width/r.width); 
+      mouseY=(t.clientY-r.top)*(canvas.height/r.height);
+    },{passive:true});
+
+    let start = performance.now();
+    function sweep01(now){
+      const elapsed = (now - start) % SWEEP_DURATION_MS; // 0..duration
+      return elapsed / SWEEP_DURATION_MS;                // 0..1
+    }
+
+    function animate(now){
+      const t = sweep01(now);           // 0..1
+      const color = tempToColor(t);     // 1816K→9802K
+      phase += 0.05;
+
+      drawLight(ctx, light, phase, mouseX, mouseY, color);
+
+      dot.style.left = `${t*100}%`;
+      dot.style.background = color;
+      dot.style.boxShadow = `0 0 22px ${color}, 0 0 8px rgba(255,255,255,.75) inset`;
+
+      raf = requestAnimationFrame(animate);
+    }
+
+    const page = document.getElementById(`page${pageIndex}`);
+    const obs = new MutationObserver(()=>{
+      if(page.classList.contains('active')){
+        start = performance.now();
+        resizeCanvas();
+        updateMousePos();
+        if(!raf) raf = requestAnimationFrame(animate);
+      }else{
+        if(raf){ cancelAnimationFrame(raf); raf=null; }
+      }
+    });
+    obs.observe(page,{attributes:true,attributeFilter:['class']});
+  }
+
+  // 色溫轉顏色：暖橘→白（含 gamma）
+  function tempToColor(t){
+    const g=0.75; const tt=Math.pow(Math.max(0,Math.min(1,t)),g);
+    const warm=[0xFF,0x6A,0x00], white=[0xFF,0xFF,0xFF];
+    const rgb=warm.map((v,i)=>Math.round(v+(white[i]-v)*tt));
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  }
+
+  // 光形（不影響色溫，只控制形狀/位置）
+  function drawLight(ctx, light, phase, mx, my, color){
+    const W=ctx.canvas.width,H=ctx.canvas.height,cx=W/2,cy=H/2;
+    ctx.clearRect(0,0,W,H);
+    let r=W*0.25; // 響應式半徑 - 增加基礎大小
+    
+    switch(light.type){
+      case 'breathing': r=W*0.18+W*0.15*((Math.sin(phase*.5)+1)/2); break;
+      case 'heartbeat': r=W*0.18+W*0.15*Math.max(0,Math.sin(phase*2)); break;
+      case 'flash':     r=(Math.sin(phase*7)>.7)?W*0.35:W*0.12; break;
+      case 'fadeout':   r=W*0.3-(phase*W*0.12)%W*0.12; break;
+      case 'spotlight': r=W*0.32; break;
+      case 'diffuse':   r=W*0.38; break;
+      case 'fragment':  r=W*0.2+W*0.1*Math.abs(Math.sin(phase*1.2)); break;
+      case 'progress':  r=W*0.18+W*0.18*((Math.sin(phase*.6)+1)/2); break;
+      case 'nodding':   return drawGlow(ctx,cx,cy+H*0.05*Math.sin(phase*1.5),W*0.25,color);
+      case 'feedback':  return drawGlow(ctx,mx,my,W*0.25,color);
+      case 'cold':      r=W*0.25; break;
+      case 'warm':      r=W*0.28; break;
+    }
+    drawGlow(ctx,cx,cy,r,color);
+  }
+  
+  function drawGlow(ctx,x,y,r,color){
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,color); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+
   /* ================= 初始化 ================= */
   document.addEventListener('DOMContentLoaded',()=>{
     createLightPages();
