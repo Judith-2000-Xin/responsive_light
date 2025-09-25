@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>光語言系統評分研究</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:linear-gradient(135deg,#0f1419 0%,#1a2332 100%);color:#fff;min-height:100vh;overflow-x:hidden}
+
+  .page{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    transform:translateX(100px);
+    transition:all .45s ease;
+    z-index:1;
+    overflow-y:auto;
+    padding:20px;
+  }
+  .page.active{opacity:1;transform:translateX(0);z-index:10}
+  .page.prev{transform:translateX(-100px)}
+
+  /* 確保所有頁面內容居中但文字靠左 */
+  .intro-page{
+    text-align:left;
+    max-width:min(90vw, 800px);
+    width:100%;
+  }
+  .intro-title{
+    font-size:clamp(24px, 4vw, 36px);
+    color:#64b5f6;
+    margin-bottom:30px;
+    text-shadow:0 0 20px rgba(66,165,245,.5);
+    text-align:center;
+  }
+  .intro-content{
+    font-size:clamp(14px, 2.5vw, 18px);
+    line-height:1.8;
+    margin-bottom:40px;
+    color:#e0e0e0;
+    text-align:left;
+  }
+  .intro-content h3{
+    color:#90caf9;
+    margin:25px 0 15px;
+    font-size:clamp(16px, 3vw, 22px);
+    text-align:left;
+  }
+
+  .profile-page{
+    max-width:min(90vw, 700px);
+    width:100%;
+  }
+  .form-group{
+    margin-bottom:30px;
+    width:100%;
+  }
+  .form-title{
+    font-size:clamp(16px, 2.8vw, 20px);
+    color:#90caf9;
+    margin-bottom:15px;
+    text-align:left;
+  }
+  .checkbox-group{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(140px, 40vw),1fr));
+    gap:15px;
+    margin-bottom:12px;
+  }
+  .checkbox-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 16px;
+    background:rgba(50,70,90,.6);
+    border:2px solid rgba(100,120,180,.3);
+    border-radius:10px;
+    cursor:pointer;
+    transition:all .2s ease;
+    user-select:none;
+    font-size:clamp(12px, 2.2vw, 16px);
+  }
+  .checkbox-item:hover{background:rgba(70,90,120,.8);border-color:rgba(120,140,200,.6)}
+  .checkbox-item.selected{background:rgba(100,120,180,.4);border-color:#42a5f5}
+  .checkbox-item input{
+    width:clamp(14px, 2.5vw, 18px);
+    height:clamp(14px, 2.5vw, 18px);
+    pointer-events:none;
+  }
+  .other-input{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:rgba(50,70,90,.8);
+    border:2px solid rgba(100,120,180,.3);
+    border-radius:8px;
+    color:#fff;
+    font-size:clamp(12px, 2.2vw, 16px);
+  }
+  .other-input:focus{outline:none;border-color:#42a5f5}
+
+  .light-page{
+    padding:20px;
+    justify-content:flex-start;
+    align-items:center;
+    gap:clamp(20px, 3vw, 28px);
+    max-width:min(95vw, 900px);
+    width:100%;
+  }
+  .light-display{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:clamp(12px, 2.5vw, 18px);
+    width:100%;
+    max-width:min(90vw, 640px);
+  }
+  .light-title{
+    font-size:clamp(20px, 3.5vw, 28px);
+    color:#64b5f6;
+    text-shadow:0 0 30px rgba(66,165,245,.3);
+    text-align:center;
+  }
+  .light-canvas{
+    width:min(90vw, 560px);
+    height:min(90vw, 560px);
+    max-width:560px;
+    max-height:560px;
+    border:1px solid rgba(100,120,180,.2);
+    border-radius:10px;
+  }
+  .light-description{
+    text-align:center;
+    font-size:clamp(12px, 2.2vw, 16px);
+    color:#b0b0b0;
+    max-width:min(90vw, 520px);
+    line-height:1.5;
+  }
+
+  /* LED 色溫條：響應式設計 */
+  .led-wrap{
+    width:min(90vw, 560px);
+    max-width:560px;
+  }
+  .led-strip{
+    width:100%;
+    height:clamp(20px, 3vw, 24px);
+    position:relative;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 6px 22px rgba(255,255,255,.18);
+    background:linear-gradient(90deg,#ff6a00 0%,#ffd38a 40%,#ffffff 100%);
+  }
+  .led-gloss{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.15));box-shadow:inset 0 2px 6px rgba(255,255,255,.5),inset 0 -3px 10px rgba(0,0,0,.22);pointer-events:none}
+  .lightbar{
+    position:absolute;top:50%;left:0;transform:translateY(-50%);
+    width:14%;height:70%;border-radius:999px;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,.35) 60%,rgba(255,255,255,0) 70%);
+    filter:blur(1px);
+    animation:lightbarSweep var(--sweep-duration,3.2s) linear infinite;
+  }
+  @keyframes lightbarSweep{0%{left:0%}100%{left:100%}}
+  .led-indicator{
+    position:absolute;
+    top:50%;
+    width:clamp(24px, 4vw, 30px);
+    height:clamp(24px, 4vw, 30px);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:#fff;
+    border:2px solid rgba(0,0,0,.15);
+    box-shadow:0 0 22px rgba(255,255,255,.85),0 0 8px rgba(255,255,255,.75) inset;
+  }
+  .temperature-labels{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    font-size:clamp(10px, 2vw, 14px);
+    color:#cfd8dc;
+    margin-top:10px;
+    text-shadow:0 1px 1px rgba(0,0,0,.35);
+  }
+
+  .rating-panel{
+    width:100%;
+    max-width:min(90vw, 740px);
+    padding:clamp(16px, 3vw, 28px);
+    background:linear-gradient(135deg,rgba(30,40,60,.9),rgba(20,30,45,.95));
+    border-radius:16px;
+    border:2px solid rgba(100,120,180,.3);
+  }
+  .rating-title{
+    font-size:clamp(18px, 3vw, 24px);
+    color:#90caf9;
+    text-align:center;
+    margin-bottom:18px;
+  }
+  .question{
+    margin:14px 0 8px;
+    font-size:clamp(13px, 2.2vw, 16px);
+    line-height:1.6;
+    color:#e3f2fd;
+    text-align:center;
+  }
+  .rating-scale{margin-bottom:16px}
+  .scale-container{
+    display:flex;
+    align-items:center;
+    gap:clamp(6px, 1.5vw, 10px);
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .scale-end{
+    font-size:clamp(10px, 2vw, 14px);
+    color:#b0b0b0;
+    min-width:clamp(60px, 15vw, 90px);
+    text-align:center;
+    flex-shrink:0;
+  }
+  .scale-buttons{
+    display:flex;
+    gap:clamp(4px, 1vw, 8px);
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .scale-btn{
+    width:clamp(32px, 5vw, 40px);
+    height:clamp(32px, 5vw, 40px);
+    border:2px solid rgba(100,120,180,.4);
+    background:rgba(50,70,90,.6);
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#e0e0e0;
+    font-size:clamp(10px, 2vw, 14px);
+    font-weight:700;
+    transition:all .15s;
+    flex-shrink:0;
+  }
+  .scale-btn:hover{background:rgba(70,90,120,.85);border-color:rgba(120,140,200,.7);transform:translateY(-1px)}
+  .scale-btn.selected{background:#42a5f5;border-color:#1976d2;color:#fff;box-shadow:0 4px 10px rgba(25,118,210,.35)}
+
+  .btn{
+    padding:clamp(10px, 2vw, 14px) clamp(20px, 4vw, 28px);
+    font-size:clamp(14px, 2.5vw, 18px);
+    font-weight:bold;
+    border:none;
+    border-radius:25px;
+    cursor:pointer;
+    transition:all .2s;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .btn-primary{
+    background:linear-gradient(45deg,#42a5f5,#1976d2);
+    color:#fff;
+    box-shadow:0 4px 15px rgba(66,165,245,.3);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(66,165,245,.45)}
+  .btn-next{display:block;margin:20px auto 0}
+
+  .progress-bar{position:fixed;top:0;left:0;height:4px;background:#42a5f5;transition:width .3s ease;z-index:1000;width:0%}
+
+  .thank-page{
+    text-align:center;
+    max-width:min(90vw, 600px);
+    width:100%;
+  }
+  .thank-title{
+    font-size:clamp(32px, 6vw, 48px);
+    color:#64b5f6;
+    margin-bottom:20px;
+    text-shadow:0 0 30px rgba(66,165,245,.5);
+  }
+  .thank-message{
+    font-size:clamp(14px, 2.8vw, 20px);
+    color:#e0e0e0;
+    line-height:1.6;
+    text-align:left;
+  }
+
+  .grid-background{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    opacity:.05;
+    background-image:
+      linear-gradient(rgba(100,120,180,.3) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(100,120,180,.3) 1px,transparent 1px);
+    background-size:50px 50px;
+    pointer-events:none;
+  }
+
+  /* 針對極小螢幕的額外優化 */
+  @media (max-width: 480px) {
+    .page {
+      padding: 15px 10px;
+    }
+    
+    .checkbox-group {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    
+    .light-page {
+      gap: 15px;
+    }
+    
+    .scale-container {
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .scale-buttons {
+      gap: 6px;
+    }
+    
+    .rating-panel {
+      padding: 16px 12px;
+    }
+  }
+
+  /* 針對超寬螢幕的限制 */
+  @media (min-width: 1200px) {
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .page.active {
+      transform: translateX(-50%);
+    }
+    
+    .page.prev {
+      transform: translateX(calc(-50% - 100px));
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="grid-background"></div>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- 研究說明 -->
+  <div class="page active intro-page" id="page0">
+    <h1 class="intro-title">光語言系統感知研究</h1>
+    <div class="intro-content">
+      <h3>研究目的</h3>
+      <p>本研究旨在探討不同光互動模式對人類情緒與注意力狀態的影響。透過您的參與，我們希望了解光語言系統在人機互動設計中的應用潛力。</p>
+      <h3>參與須知</h3>
+      <p>• 本研究純屬學術研究用途，所有資料將以匿名方式處理<br>
+         • 研究時間約需 10–15 分鐘<br>
+         • 您將體驗 12 種不同的光互動效果<br>
+         • 請根據您的直覺感受進行評分<br>
+         • 您可隨時退出研究，不會有任何後果</p>
+      <h3>隱私保護</h3>
+      <p>您的個人資料與評分結果將嚴格保密，僅用於學術研究分析。研究結果將以統計數據呈現，不會揭露任何個人身份資訊。</p>
+    </div>
+    <button class="btn btn-primary" onclick="nextPage()">開始參與研究</button>
+  </div>
+
+  <!-- 基本資料 -->
+  <div class="page profile-page" id="page1">
+    <h2 class="intro-title" style="text-align:center;width:100%;">基本資料</h2>
+
+    <div class="form-group">
+      <div class="form-title">性別</div>
+      <div class="checkbox-group" id="genderGroup">
+        <div class="checkbox-item" data-value="male"><input type="checkbox"> <span>男性</span></div>
+        <div class="checkbox-item" data-value="female"><input type="checkbox"> <span>女性</span></div>
+        <div class="checkbox-item" data-value="Non-binary / gender diverse"><input type="checkbox"> <span>非二元性別</span></div>
+        <div class="checkbox-item" data-value="Prefer not to say"><input type="checkbox"> <span>不願透露</span></div>
+        <div class="checkbox-item" data-value="other-gender"><input type="checkbox"> <span>其他</span></div>
+      </div>
+      <input class="other-input" id="genderOther" placeholder="請輸入其他性別" style="display:none;">
+    </div>
+
+    <div class="form-group">
+      <div class="form-title">年齡</div>
+      <div class="checkbox-group" id="ageGroup">
+        <div class="checkbox-item" data-value="18-"><input type="checkbox"> <span>18歲以下</span></div>
+        <div class="checkbox-item" data-value="18-25"><input type="checkbox"> <span>18–25歲</span></div>
+        <div class="checkbox-item" data-value="26-35"><input type="checkbox"> <span>26–35歲</span></div>
+        <div class="checkbox-item" data-value="36-45"><input type="checkbox"> <span>36–45歲</span></div>
+        <div class="checkbox-item" data-value="46-55"><input type="checkbox"> <span>46–55歲</span></div>
+        <div class="checkbox-item" data-value="56+"><input type="checkbox"> <span>56歲以上</span></div>
+        <div class="checkbox-item" data-value="other-age"><input type="checkbox"> <span>其他</span></div>
+      </div>
+      <input class="other-input" id="ageOther" placeholder="請輸入年齡" style="display:none;">
+    </div>
+
+    <div class="form-group">
+      <div class="form-title">國家／地區</div>
+      <div class="checkbox-group" id="nationalityGroup">
+        <div class="checkbox-item" data-value="east-asia">
+          <input type="checkbox"> <span>東亞</span>
+        </div>
+        <div class="checkbox-item" data-value="southeast-asia">
+          <input type="checkbox"> <span>東南亞</span>
+        </div>
+        <div class="checkbox-item" data-value="south-asia">
+          <input type="checkbox"> <span>南亞</span>
+        </div>
+        <div class="checkbox-item" data-value="europe">
+          <input type="checkbox"> <span>歐洲</span>
+        </div>
+        <div class="checkbox-item" data-value="americas">
+          <input type="checkbox"> <span>美洲</span>
+        </div>
+        <div class="checkbox-item" data-value="africa">
+          <input type="checkbox"> <span>非洲</span>
+        </div>
+        <div class="checkbox-item" data-value="oceania">
+          <input type="checkbox"> <span>大洋洲</span>
+        </div>
+        <div class="checkbox-item" data-value="prefer-not">
+          <input type="checkbox"> <span>不願透露</span>
+        </div>
+        <div class="checkbox-item" data-value="other-nationality">
+          <input type="checkbox"> <span>其他</span>
+        </div>
+      </div>
+      <input class="other-input" id="nationalityOther"
+             placeholder="請輸入國家／地區｜Please specify"
+             style="display:none;">
+    </div>
+
+    <button class="btn btn-primary btn-next" onclick="nextPage()">NEXT</button>
+  </div>
+
+  <!-- 感謝頁 -->
+  <div class="page thank-page" id="thankPage">
+    <h1 class="thank-title">Thank You! ^^</h1>
+    <div class="thank-message">
+      <p>感謝您參與本次光語言系統感知研究！</p>
+      <p>您的寶貴意見將有助於我們改善人機互動體驗。</p>
+      <p>研究結果將用於學術發表，為未來的光互動設計提供重要參考。</p>
+    </div>
+  </div>
+
+<script>
+  /* ================= 可調參數 ================= */
+  const SWEEP_DURATION_MS = 6400; // lightbar 從左→右一次所需時間（毫秒）
+
+  /* ================= 全域狀態 ================= */
+  let currentPage = 0;
+  let totalPages  = 15;
+  let selectedOptions = { gender:'', age:'', nationality:'' };
+  let ratings = {};
+
+  /* 光互動清單 */
+  const lightTypes = [
+    { name:'Breathing 呼吸律動', type:'breathing', description:'如呼吸般緩慢變化的光效，模擬生命的節奏感' },
+    { name:'Heartbeat 心跳節拍', type:'heartbeat', description:'模擬心跳節奏的光效，帶有規律的強弱變化' },
+    { name:'Flash 閃爍警示', type:'flash', description:'快速閃爍的光效，用於吸引注意力' },
+    { name:'Fade Out 漸漸消失', type:'fadeout', description:'光線逐漸淡出的效果，營造平靜的氛圍' },
+    { name:'Focus 聚焦集中', type:'spotlight', description:'集中的光束效果，用於突出重點' },
+    { name:'Expand 擴散展開', type:'diffuse', description:'光線向外擴散的效果，營造開放感' },
+    { name:'Fragment 碎片漂移', type:'fragment', description:'光線分散移動的效果，表現動態變化' },
+    { name:'Progress 進度推進', type:'progress', description:'表現進度的光效，具有前進感' },
+    { name:'Cold Sleep 冷靜休眠', type:'cold', description:'冷色調的溫和光效，帶來平靜感受' },
+    { name:'Awakening 溫暖甦醒', type:'warm', description:'暖色調的活躍光效，帶來活力感受' },
+    { name:'Nodding 點頭回應', type:'nodding', description:'上下移動的光效，模擬點頭動作' },
+    { name:'Feedback 互動回饋', type:'feedback', description:'根據滑鼠位置變化的互動光效' }
+  ];
+
+  /* === 依你的圖改成 5 題、7 點量表 === */
+  const ratingScales = [
+    { key:'relax',    label:'放鬆面向',   statement:'「這種光效能讓我感到放鬆。」' },
+    { key:'focus',    label:'專注面向',   statement:'「這種光效幫助我更專心於任務。」' },
+    { key:'alert',    label:'提醒面向',   statement:'「這種光效能有效提醒我注意環境或任務。」' },
+    { key:'distract', label:'干擾面向（反向題）', statement:'「這種光效讓我感到分心。」', reverse:true },
+    { key:'overall',  label:'整體評價（總結性題目）', statement:'「整體而言，這種光效對我是正面的體驗。」' }
+  ];
+  const likertLeft  = '非常不同意';
+  const likertRight = '非常同意';
+
+  /* ================= 導覽 ================= */
+  function nextPage(){
+    if(currentPage===1){
+      if(!selectedOptions.gender||!selectedOptions.age||!selectedOptions.nationality){
+        alert('請完成所有基本資料填寫');return;
+      }
+    }
+    if(currentPage>=2 && currentPage<=1+lightTypes.length){
+      const lightType=lightTypes[currentPage-2].type;
+      if(!ratings[lightType] || Object.keys(ratings[lightType]).length<ratingScales.length){
+        alert('請完成所有項目的評分');return;
+      }
+    }
+    const cur=document.getElementById(`page${currentPage}`);
+    if(cur){cur.classList.remove('active');cur.classList.add('prev');}
+    currentPage++;
+    let nxt=(currentPage>=totalPages-1)?document.getElementById('thankPage'):document.getElementById(`page${currentPage}`);
+    if(currentPage>=totalPages-1) currentPage = totalPages-1;
+    if(nxt){nxt.classList.add('active');nxt.classList.remove('prev');}
+    updateProgress();
+  }
+  function updateProgress(){
+    const p = (currentPage/(totalPages-1))*100;
+    document.getElementById('progressBar').style.width = `${p}%`;
+  }
+  window.nextPage = nextPage;
+
+  /* ================= 表單 ================= */
+  function selectOption(group,value){
+    const groupEl=document.getElementById(group+'Group'); if(!groupEl) return;
+    groupEl.querySelectorAll('.checkbox-item').forEach(el=>{
+      el.classList.remove('selected'); const cb=el.querySelector('input'); if(cb) cb.checked=false;
+    });
+    const item=[...groupEl.querySelectorAll('.checkbox-item')].find(x=>x.dataset.value===value);
+    if(item){ item.classList.add('selected'); const cb=item.querySelector('input'); if(cb) cb.checked=true; }
+    selectedOptions[group]=value;
+    const other=document.getElementById(group+'Other');
+    if(other){ if(value.includes('other')){ other.style.display='block'; other.focus(); } else { other.style.display='none'; other.value=''; } }
+  }
+  window.selectOption = selectOption;
+
+  function setRating(lightType,scale,value){
+    ratings[lightType]=ratings[lightType]||{}; ratings[lightType][scale]=value;
+    const idx = lightTypes.findIndex(l=>l.type===lightType)+2;
+    const page = document.getElementById(`page${idx}`);
+    if(page){
+      page.querySelectorAll(`.scale-btn[data-scale="${scale}"]`).forEach(b=>b.classList.remove('selected'));
+      const t = page.querySelector(`.scale-btn[data-scale="${scale}"][data-value="${value}"]`);
+      if(t) t.classList.add('selected');
+    }
+  }
+  window.setRating = setRating;
+
+  /* ================= 建立光頁 ================= */
+  function createLightPages(){
+    lightTypes.forEach((light,i)=>{
+      const pageIndex = i+2;
+      const page = document.createElement('div');
+      page.className = 'page light-page';
+      page.id = `page${pageIndex}`;
+      page.innerHTML = `
+        <div class="light-display">
+          <div class="light-title">${light.name}</div>
+          <canvas class="light-canvas" id="canvas${pageIndex}" width="560" height="560"></canvas>
+          <div class="light-description">${light.description}</div>
+
+          <div class="led-wrap">
+            <div class="led-strip" style="--sweep-duration:${SWEEP_DURATION_MS}ms">
+              <div class="led-gloss"></div>
+              <div class="lightbar"></div>
+              <div class="led-indicator" id="ledIndicator${pageIndex}"></div>
+            </div>
+            <div class="temperature-labels"><span>1816K</span><span>9802K</span></div>
+          </div>
+        </div>
+
+        <div class="rating-panel">
+          <h3 class="rating-title">請依直覺作答即可</h3>
+          ${ratingScales.map(s=>`
+            <div class="rating-scale">
+              <div class="question"><strong>${s.label}</strong><br>${s.statement}</div>
+              <div class="scale-container">
+                <div class="scale-end">${likertLeft}</div>
+                <div class="scale-buttons">
+                  ${[1,2,3,4,5,6,7].map(n=>`
+                    <div class="scale-btn" title="${n}" data-scale="${s.key}" data-value="${n}"
+                         onclick="setRating('${light.type}','${s.key}',${n})">${n}</div>
+                  `).join('')}
+                </div>
+                <div class="scale-end">${likertRight}</div>
+              </div>
+            </div>
+          `).join('')}
+          <button class="btn btn-primary btn-next" onclick="nextPage()">NEXT</button>
+        </div>`;
+      document.body.appendChild(page);
+      initLight(pageIndex, light);
+    });
+  }
+
+  /* ================= lightbar：1816K→9802K 單向循環 ================= */
+  function initLight(pageIndex, light){
+    const canvas = document.getElementById(`canvas${pageIndex}`);
+    const ctx    = canvas.getContext('2d');
+    const dot    = document.getElementById(`ledIndicator${pageIndex}`);
+
+    // 響應式調整 canvas 尺寸
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let raf=null, phase=0, mouseX, mouseY;
+    
+    function updateMousePos() {
+      mouseX = canvas.width * 0.4;
+      mouseY = canvas.height * 0.4;
+    }
+    updateMousePos();
+    
+    canvas.addEventListener('mousemove',e=>{
+      const r=canvas.getBoundingClientRect(); 
+      mouseX=(e.clientX-r.left)*(canvas.width/r.width); 
+      mouseY=(e.clientY-r.top)*(canvas.height/r.height);
+    },{passive:true});
+    canvas.addEventListener('touchmove',e=>{
+      const r=canvas.getBoundingClientRect(); const t=e.touches[0];
+      mouseX=(t.clientX-r.left)*(canvas.width/r.width); 
+      mouseY=(t.clientY-r.top)*(canvas.height/r.height);
+    },{passive:true});
+
+    let start = performance.now();
+    function sweep01(now){
+      const elapsed = (now - start) % SWEEP_DURATION_MS; // 0..duration
+      return elapsed / SWEEP_DURATION_MS;                // 0..1
+    }
+
+    function animate(now){
+      const t = sweep01(now);           // 0..1
+      const color = tempToColor(t);     // 1816K→9802K
+      phase += 0.05;
+
+      drawLight(ctx, light, phase, mouseX, mouseY, color);
+
+      dot.style.left = `${t*100}%`;
+      dot.style.background = color;
+      dot.style.boxShadow = `0 0 22px ${color}, 0 0 8px rgba(255,255,255,.75) inset`;
+
+      raf = requestAnimationFrame(animate);
+    }
+
+    const page = document.getElementById(`page${pageIndex}`);
+    const obs = new MutationObserver(()=>{
+      if(page.classList.contains('active')){
+        start = performance.now();
+        resizeCanvas();
+        updateMousePos();
+        if(!raf) raf = requestAnimationFrame(animate);
+      }else{
+        if(raf){ cancelAnimationFrame(raf); raf=null; }
+      }
+    });
+    obs.observe(page,{attributes:true,attributeFilter:['class']});
+  }
+
+  // 色溫轉顏色：暖橘→白（含 gamma）
+  function tempToColor(t){
+    const g=0.75; const tt=Math.pow(Math.max(0,Math.min(1,t)),g);
+    const warm=[0xFF,0x6A,0x00], white=[0xFF,0xFF,0xFF];
+    const rgb=warm.map((v,i)=>Math.round(v+(white[i]-v)*tt));
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+  }
+
+  // 光形（不影響色溫，只控制形狀/位置）
+  function drawLight(ctx, light, phase, mx, my, color){
+    const W=ctx.canvas.width,H=ctx.canvas.height,cx=W/2,cy=H/2;
+    ctx.clearRect(0,0,W,H);
+    let r=W*0.25; // 響應式半徑 - 增加基礎大小
+    
+    switch(light.type){
+      case 'breathing': r=W*0.18+W*0.15*((Math.sin(phase*.5)+1)/2); break;
+      case 'heartbeat': r=W*0.18+W*0.15*Math.max(0,Math.sin(phase*2)); break;
+      case 'flash':     r=(Math.sin(phase*7)>.7)?W*0.35:W*0.12; break;
+      case 'fadeout':   r=W*0.3-(phase*W*0.12)%W*0.12; break;
+      case 'spotlight': r=W*0.32; break;
+      case 'diffuse':   r=W*0.38; break;
+      case 'fragment':  r=W*0.2+W*0.1*Math.abs(Math.sin(phase*1.2)); break;
+      case 'progress':  r=W*0.18+W*0.18*((Math.sin(phase*.6)+1)/2); break;
+      case 'nodding':   return drawGlow(ctx,cx,cy+H*0.05*Math.sin(phase*1.5),W*0.25,color);
+      case 'feedback':  return drawGlow(ctx,mx,my,W*0.25,color);
+      case 'cold':      r=W*0.25; break;
+      case 'warm':      r=W*0.28; break;
+    }
+    drawGlow(ctx,cx,cy,r,color);
+  }
+  
+  function drawGlow(ctx,x,y,r,color){
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,color); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+
+  /* ================= 初始化 ================= */
+  document.addEventListener('DOMContentLoaded',()=>{
+    createLightPages();
+    totalPages = 2 + lightTypes.length + 1;
+
+    ['gender','age','nationality'].forEach(group=>{
+      const el=document.getElementById(group+'Group');
+      if(el){
+        el.addEventListener('click',e=>{
+          const item=e.target.closest('.checkbox-item');
+          if(item) selectOption(group,item.dataset.value);
+        });
+      }
+    });
+
+    updateProgress();
+
+    // 備援：點整塊也能選
+    document.addEventListener('click',e=>{
+      const item=e.target.closest('.checkbox-item'); if(!item) return;
+      const groupEl=item.parentElement; if(!groupEl||!groupEl.id) return;
+      const group=groupEl.id.replace('Group','');
+      selectOption(group,item.dataset.value||'');
+    },true);
+    
+    // 響應式視窗調整
+    window.addEventListener('resize', () => {
+      // 重新調整當前活動頁面的元素
+      const activePage = document.querySelector('.page.active');
+      if (activePage && activePage.querySelector('.light-canvas')) {
+        const canvas = activePage.querySelector('.light-canvas');
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+      }
+    });
+  });
+</script>
+</body>
+</html>
